@@ -1,0 +1,39 @@
+service: entity-streamer
+
+frameworkVersion: ">=1.2.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: java8
+  region: us-west-2
+  iamManagedPolicies:
+    - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+
+package:
+  individually: true
+
+functions:
+  entity-pre-store:
+    handler: com.serverless.Handler
+    package:
+      artifact: entity-pre-store/target/entity-pre-store.jar
+    events:
+      - sns: notification
+  entity-transformer:
+    handler: com.serverless.Handler
+    package:
+      artifact: entity-transformer/target/entity-transformer.jar
+    events:
+      - name: entity-transform
+      - description: 'Entity Transform'
+      - schedule: rate(1 minute)
+  entity-receiver:
+    handler: com.serverless.Handler
+    package:
+      artifact: entity-receiver/target/entity-receiver.jar
+    events:
+      - s3:
+         bucket: lims-ca-notification
+         event: s3:ObjectCreated:*
+         rules:
+           - prefix: lims-case-trim/
